@@ -3,13 +3,13 @@
 	.text
 
 _start:
-	jmp path
-
-goback:
 	# open(/etc/passwd)
 	xor	%rax, %rax
 	addb	$2, %al
+	#lea	path, %rdi
+	push	$path
 	pop	%rdi
+	#mov	$path, %rdi
 	xor	%rsi, %rsi
 	syscall
 
@@ -24,7 +24,7 @@ goback:
 
 	# write(/etc/passwd)
 	xor	%rax, %rax
-	addb	$1, %al			# system call 1 is write
+	inc	%rax			# system call 1 is write
 	mov	%rax, %rdi		# file handle 1 is stdout
 	mov	%rsp, %rsi
         xor	%rdx, %rdx
@@ -38,5 +38,4 @@ goback:
 	syscall
 
 path:
-	call goback
 	.ascii	"/etc/passwd"
