@@ -22,7 +22,7 @@ Input: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
 
 0xffffd7f0 ← previous buffer address
 0xffffd908 ← previous string address
-0xffffd908 − 0xffffd7f0 = 0x118 ← size of buffer
+0xffffd908 − 0xffffd7f0 = 0x118 ← offset of string from buffer
 
 (gdb) x/128bx $esp
 0xffffd6d0:     0xe0    0xd6    0xff    0xff    0x35    0xda    0xff    0xff
