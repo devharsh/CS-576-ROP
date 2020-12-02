@@ -1,5 +1,6 @@
+import os
 import socket
-import sys, os
+import sys
 
 #create a socket to read from file handler
 sock = os.getenv("HOME") + "/victim.sock"
