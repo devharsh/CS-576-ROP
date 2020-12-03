@@ -60,6 +60,15 @@ Task 1:
       0x7ffffffde000     0x7ffffffff000    0x21000        0x0 [stack]
   0xffffffffff600000 0xffffffffff601000     0x1000        0x0 [vsyscall]
 
+	-- (gdb) info proc all
+	Start of text: 0x555555554000
+	End of text: 0x5555555551d8
+	Start of stack: 0x7fffffffe8e0
+
+	-- start of stack is stored at 0x7fffffffe740
+	0x7fffffffe740 − 0x7fffffffe4c0 = 0x280 = 640
+	that is 640 bits away from the buffer start
+
 - Find Binary Address
 
 	-- Tried to find binary base address (starting point) with 'readelf'
@@ -97,6 +106,11 @@ Task 1:
 --x--x--x--x--x-- 
 
 Task 2:
+
+Note: I tried to perform a Structured Exception Handler exploit and overwrite the __stack_chk_fail with 
+address of die function (0x0000555555554aea) but __stack_chk_fail sits at much lower address (0x555555554900) 
+compared to the buffer (0x7fffffffe540), which requires overwriting almost everything in the stack, so 
+went ahead without SEH exploit by leaking canary and writing it back on the stack buffer.
 
 - Regular version:
 
