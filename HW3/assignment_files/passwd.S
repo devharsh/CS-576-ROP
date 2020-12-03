@@ -3,7 +3,7 @@
 	.text
 
 _start:
-	# open(/etc/passwd)
+	# open(secrets.txt)
 	xor	%rax, %rax
 	addb	$2, %al
 	push	$path
@@ -11,7 +11,7 @@ _start:
 	xor	%rsi, %rsi
 	syscall
 
-	# read(/etc/passwd)
+	# read(secrets.txt)
 	mov	%rax, %rdi
 	sub	$0xff, %rsp
 	lea	0x08(%rsp), %rsi
@@ -20,7 +20,7 @@ _start:
 	xor 	%rax, %rax
 	syscall
 
-	# write(/etc/passwd)
+	# write(secrets.txt)
 	xor	%rax, %rax
 	inc	%rax			# system call 1 is write
 	mov	%rax, %rdi		# file handle 1 is stdout
@@ -36,4 +36,4 @@ _start:
 	syscall
 
 path:
-	.ascii	"/etc/passwd"
+	.ascii	"secrets.txt"
